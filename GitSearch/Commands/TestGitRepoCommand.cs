@@ -1,7 +1,7 @@
 ﻿using System.IO;
 using System.Management.Automation;
 
-namespace GitSearch
+namespace GitSearch.Commands
 {
 	[Cmdlet(VerbsDiagnostic.Test, "GitRepo")]
 	[OutputType(typeof(bool))]
