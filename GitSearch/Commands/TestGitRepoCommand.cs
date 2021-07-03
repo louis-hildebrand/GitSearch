@@ -15,17 +15,21 @@ namespace GitSearch.Commands
 		{
 			get
 			{
-				return string.IsNullOrEmpty(path) ? GetCurrentDirectory() : path;
+				return string.IsNullOrEmpty(path) ? 
+					Directory.GetCurrentDirectory() : 
+					System.IO.Path.GetFullPath(path);
 			}
-			set
-			{
-				var currentDirectory = GetCurrentDirectory();
-				path = string.IsNullOrEmpty(value) ?
-					currentDirectory :
-					System.IO.Path.GetFullPath(System.IO.Path.Combine(currentDirectory, value));
-			}
+			set { path = value; }
 		}
 		private string path;
+
+		protected override void BeginProcessing()
+		{
+			base.BeginProcessing();
+
+			var currentDirectory = ((PathInfo)GetVariableValue("pwd")).ToString();
+			Directory.SetCurrentDirectory(currentDirectory);
+		}
 
 		protected override void ProcessRecord()
 		{
@@ -58,11 +62,6 @@ namespace GitSearch.Commands
 					return;
 				}
 			}
-		}
-
-		private string GetCurrentDirectory()
-		{
-			return ((PathInfo)GetVariableValue("pwd")).ToString();
 		}
 	}
 }
