@@ -1,5 +1,4 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
 using System.Management.Automation;
 
 namespace GitSearch
@@ -21,8 +20,8 @@ namespace GitSearch
 			set
 			{
 				var currentDirectory = GetCurrentDirectory();
-				path = string.IsNullOrEmpty(value) ? 
-					currentDirectory : 
+				path = string.IsNullOrEmpty(value) ?
+					currentDirectory :
 					System.IO.Path.GetFullPath(System.IO.Path.Combine(currentDirectory, value));
 			}
 		}
