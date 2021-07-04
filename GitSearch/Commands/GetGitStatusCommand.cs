@@ -48,13 +48,45 @@ namespace GitSearch.Commands
 				.AddArgument(Path)
 				.Invoke();
 
-			// Refresh index
+			RefreshIndex(ps);
+
+			// Look for local changes
+			repoStatus.Branch = GetCurrentBranch(ps);
+
+			repoStatus.HasUntracked = CheckUntrackedFiles(ps);
+
+			repoStatus.HasModified = CheckModifiedFiles(ps);
+
+			repoStatus.HasUnmerged = CheckUnmergedFiles(ps);
+
+			repoStatus.HasStaged = CheckStagedFiles(ps);
+
+			// Look for differences between the local and remote repos
+			var remoteName = GetRemoteName(ps);
+			if (!repoStatus.DetachedHead && !string.IsNullOrEmpty(remoteName))
+			{
+				repoStatus.LocalCommits = CountLocalCommits(ps, remoteName);
+
+				repoStatus.RemoteCommits = CountRemoteCommits(ps, remoteName);
+			}
+
+			// Output result and return to starting directory
+			WriteObject(repoStatus);
+
+			ps.AddCommand("Pop-Location")
+				.Invoke();
+		}
+
+		private void RefreshIndex(PowerShell ps)
+		{
 			ps.AddCommand("git")
 				.AddParameter("update-index")
 				.AddParameter("--refresh")
 				.Invoke();
+		}
 
-			// Get current branch
+		private string GetCurrentBranch(PowerShell ps)
+		{
 			var branchPSObject = ps
 				.AddCommand("git")
 				.AddArgument("rev-parse")
@@ -63,20 +95,23 @@ namespace GitSearch.Commands
 				.AddArgument("HEAD")
 				.Invoke()
 				.First();
+			return (string)branchPSObject.BaseObject;
+		}
 
-			repoStatus.Branch = (string)branchPSObject.BaseObject;
-
-			// Check for untracked files
-			repoStatus.HasUntracked = ps
+		private bool CheckUntrackedFiles(PowerShell ps)
+		{
+			return ps
 				.AddCommand("git")
 				.AddArgument("ls-files")
 				.AddArgument("--others")
 				.AddArgument("--exclude-standard")
 				.Invoke()
 				.Any();
+		}
 
-			// Check for deleted or modified files
-			repoStatus.HasModified = ps
+		private bool CheckModifiedFiles(PowerShell ps)
+		{
+			return ps
 				.AddCommand("git")
 				.AddArgument("ls-files")
 				.AddArgument("--deleted")
@@ -84,54 +119,27 @@ namespace GitSearch.Commands
 				.AddArgument("--exclude-standard")
 				.Invoke()
 				.Any();
+		}
 
-			// Check for unmerged files
-			repoStatus.HasUnmerged = ps
+		private bool CheckUnmergedFiles(PowerShell ps)
+		{
+			return ps
 				.AddCommand("git")
 				.AddArgument("ls-files")
 				.AddArgument("--unmerged")
 				.Invoke()
 				.Any();
+		}
 
-			// Check for staged files
-			repoStatus.HasStaged = ps
+		private bool CheckStagedFiles(PowerShell ps)
+		{
+			return ps
 				.AddCommand("git")
 				.AddArgument("diff")
 				.AddArgument("--name-only")
 				.AddArgument("--cached")
 				.Invoke()
 				.Any();
-
-			// Check for differences between the remote and local repos
-			// TODO Fix this
-			var remoteName = GetRemoteName(ps);
-			if (!repoStatus.DetachedHead && !string.IsNullOrEmpty(remoteName))
-			{
-				// TODO Look for local changes that aren't present in the remote
-				var localCommits = ps
-					.AddCommand("git")
-					.AddArgument("rev-list")
-					.AddArgument("--count")
-					.AddArgument($"{remoteName}..HEAD")
-					.Invoke()
-					.First();
-				repoStatus.LocalCommits = int.Parse((string)localCommits.BaseObject);
-
-				// TODO Look for changes in the remote that aren't present locally
-				var remoteCommits = ps
-					.AddCommand("git")
-					.AddArgument("rev-list")
-					.AddArgument("--count")
-					.AddArgument($"HEAD..{remoteName}")
-					.Invoke()
-					.First();
-				repoStatus.RemoteCommits = int.Parse((string)remoteCommits.BaseObject);
-			}
-
-			WriteObject(repoStatus);
-
-			ps.AddCommand("Pop-Location")
-				.Invoke();
 		}
 
 		private string GetRemoteName(PowerShell ps)
@@ -157,6 +165,30 @@ namespace GitSearch.Commands
 				return null;
 			else
 				return (string)remoteNameObject.BaseObject;
+		}
+	
+		private int CountLocalCommits(PowerShell ps, string remoteName)
+		{
+			var localCommits = ps
+					.AddCommand("git")
+					.AddArgument("rev-list")
+					.AddArgument("--count")
+					.AddArgument($"{remoteName}..HEAD")
+					.Invoke()
+					.First();
+			return int.Parse((string)localCommits.BaseObject);
+		}
+
+		private int CountRemoteCommits(PowerShell ps, string remoteName)
+		{
+			var remoteCommits = ps
+				.AddCommand("git")
+				.AddArgument("rev-list")
+				.AddArgument("--count")
+				.AddArgument($"HEAD..{remoteName}")
+				.Invoke()
+				.First();
+			return int.Parse((string)remoteCommits.BaseObject);
 		}
 	}
 }
