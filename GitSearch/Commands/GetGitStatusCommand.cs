@@ -6,9 +6,7 @@ using System.Management.Automation;
 
 namespace GitSearch.Commands
 {
-	[Cmdlet(VerbsCommon.Get, "GitStatus")]
-	[OutputType(typeof(RepoStatus))]
-	public class GetGitStatusCommand : PSCmdlet
+	public abstract class GetGitStatusCommand : PSCmdlet
 	{
 		[Parameter(
 			Position = 0,
@@ -34,58 +32,17 @@ namespace GitSearch.Commands
 			Directory.SetCurrentDirectory(currentDirectory);
 		}
 
-		protected override void ProcessRecord()
-		{
-			var ps = PowerShell.Create();
+		protected override abstract void ProcessRecord();
 
-			var repoStatus = new LongRepoStatus
-			{
-				FullPath = Path
-			};
-
-			// Move into the repo
-			ps.AddCommand("Push-Location")
-				.AddArgument(Path)
-				.Invoke();
-
-			RefreshIndex(ps);
-
-			// Look for local changes
-			repoStatus.Branch = GetCurrentBranch(ps);
-
-			repoStatus.HasUntracked = CheckUntrackedFiles(ps);
-
-			repoStatus.HasModified = CheckModifiedFiles(ps);
-
-			repoStatus.HasUnmerged = CheckUnmergedFiles(ps);
-
-			repoStatus.HasStaged = CheckStagedFiles(ps);
-
-			// Look for differences between the local and remote repos
-			var remoteName = GetRemoteName(ps);
-			if (!repoStatus.DetachedHead && !string.IsNullOrEmpty(remoteName))
-			{
-				repoStatus.LocalCommits = CountLocalCommits(ps, remoteName);
-
-				repoStatus.RemoteCommits = CountRemoteCommits(ps, remoteName);
-			}
-
-			// Output result and return to starting directory
-			WriteObject(repoStatus);
-
-			ps.AddCommand("Pop-Location")
-				.Invoke();
-		}
-
-		private void RefreshIndex(PowerShell ps)
+		protected void RefreshIndex(PowerShell ps)
 		{
 			ps.AddCommand("git")
-				.AddParameter("update-index")
-				.AddParameter("--refresh")
+				.AddArgument("update-index")
+				.AddArgument("--refresh")
 				.Invoke();
 		}
 
-		private string GetCurrentBranch(PowerShell ps)
+		protected string GetCurrentBranch(PowerShell ps)
 		{
 			var branchPSObject = ps
 				.AddCommand("git")
@@ -98,51 +55,7 @@ namespace GitSearch.Commands
 			return (string)branchPSObject.BaseObject;
 		}
 
-		private bool CheckUntrackedFiles(PowerShell ps)
-		{
-			return ps
-				.AddCommand("git")
-				.AddArgument("ls-files")
-				.AddArgument("--others")
-				.AddArgument("--exclude-standard")
-				.Invoke()
-				.Any();
-		}
-
-		private bool CheckModifiedFiles(PowerShell ps)
-		{
-			return ps
-				.AddCommand("git")
-				.AddArgument("ls-files")
-				.AddArgument("--deleted")
-				.AddArgument("--modified")
-				.AddArgument("--exclude-standard")
-				.Invoke()
-				.Any();
-		}
-
-		private bool CheckUnmergedFiles(PowerShell ps)
-		{
-			return ps
-				.AddCommand("git")
-				.AddArgument("ls-files")
-				.AddArgument("--unmerged")
-				.Invoke()
-				.Any();
-		}
-
-		private bool CheckStagedFiles(PowerShell ps)
-		{
-			return ps
-				.AddCommand("git")
-				.AddArgument("diff")
-				.AddArgument("--name-only")
-				.AddArgument("--cached")
-				.Invoke()
-				.Any();
-		}
-
-		private string GetRemoteName(PowerShell ps)
+		protected string GetRemoteName(PowerShell ps)
 		{
 			var refName = (string)ps
 				.AddCommand("git")
@@ -165,30 +78,6 @@ namespace GitSearch.Commands
 				return null;
 			else
 				return (string)remoteNameObject.BaseObject;
-		}
-	
-		private int CountLocalCommits(PowerShell ps, string remoteName)
-		{
-			var localCommits = ps
-					.AddCommand("git")
-					.AddArgument("rev-list")
-					.AddArgument("--count")
-					.AddArgument($"{remoteName}..HEAD")
-					.Invoke()
-					.First();
-			return int.Parse((string)localCommits.BaseObject);
-		}
-
-		private int CountRemoteCommits(PowerShell ps, string remoteName)
-		{
-			var remoteCommits = ps
-				.AddCommand("git")
-				.AddArgument("rev-list")
-				.AddArgument("--count")
-				.AddArgument($"HEAD..{remoteName}")
-				.Invoke()
-				.First();
-			return int.Parse((string)remoteCommits.BaseObject);
 		}
 	}
 }
