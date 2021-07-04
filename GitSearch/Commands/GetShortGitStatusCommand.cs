@@ -45,7 +45,7 @@ namespace GitSearch.Commands
 		{
 			// Check for files that are untracked, deleted, modified, or unmerged
 			var localChanges = GitService.CallWithOutput("ls-files " +
-				"--others --deleted --modified --unmerged --exclude standard "
+				"--others --deleted --modified --unmerged --exclude-standard "
 			);
 			if (!string.IsNullOrEmpty(localChanges))
 				return true;
