@@ -112,7 +112,7 @@ namespace GitSearch.Commands
 			{
 				var remoteName = (string)remoteNameObject.BaseObject;
 
-				// TODO Look for changes that aren't present in the remote
+				// TODO Look for local changes that aren't present in the remote
 				var localCommits = ps
 					.AddCommand("git")
 					.AddArgument("rev-list")
