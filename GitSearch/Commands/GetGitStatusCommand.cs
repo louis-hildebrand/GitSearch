@@ -38,7 +38,7 @@ namespace GitSearch.Commands
 		{
 			var ps = PowerShell.Create();
 
-			var repoStatus = new RepoStatus
+			var repoStatus = new LongRepoStatus
 			{
 				FullPath = Path
 			};
