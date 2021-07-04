@@ -1,4 +1,5 @@
 ﻿using GitSearch.Models;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Management.Automation;
@@ -102,16 +103,10 @@ namespace GitSearch.Commands
 				.Any();
 
 			// Check for differences between the remote and local repos
-			var remoteNameObject = ps
-				.AddCommand("git")
-				.AddArgument("for-each-ref")
-				.AddArgument("--format=%(upstream:short)")
-				.Invoke()
-				.FirstOrDefault();
-			if (!repoStatus.DetachedHead && remoteNameObject != null)
+			// TODO Fix this
+			var remoteName = GetRemoteName(ps);
+			if (!repoStatus.DetachedHead && !string.IsNullOrEmpty(remoteName))
 			{
-				var remoteName = (string)remoteNameObject.BaseObject;
-
 				// TODO Look for local changes that aren't present in the remote
 				var localCommits = ps
 					.AddCommand("git")
@@ -137,6 +132,31 @@ namespace GitSearch.Commands
 
 			ps.AddCommand("Pop-Location")
 				.Invoke();
+		}
+
+		private string GetRemoteName(PowerShell ps)
+		{
+			var refName = (string)ps
+				.AddCommand("git")
+				.AddArgument("symbolic-ref")
+				.AddArgument("--quiet")
+				.AddArgument("HEAD")
+				.Invoke()
+				.First()
+				.BaseObject;
+			var remoteNameObject = ps
+				.AddCommand("git")
+				.AddArgument("for-each-ref")
+				.AddArgument(refName)
+				.AddArgument("--format")
+				.AddArgument("%(upstream:short)")
+				.Invoke()
+				.FirstOrDefault();
+
+			if (remoteNameObject == null)
+				return null;
+			else
+				return (string)remoteNameObject.BaseObject;
 		}
 	}
 }
