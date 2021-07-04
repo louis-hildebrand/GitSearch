@@ -1,4 +1,6 @@
 ﻿using GitSearch.Models;
+using GitSearch.Utility;
+using System.Diagnostics;
 using System.Linq;
 using System.Management.Automation;
 
@@ -8,80 +10,61 @@ namespace GitSearch.Commands
 	[OutputType(typeof(ShortRepoStatus))]
 	public class GetShortGitStatusCommand : GetGitStatusCommand
 	{
+		private PowerShell PowerShell { get; } = PowerShell.Create();
+
+		private IGitService GitService { get; } = new GitService();
+
 		protected override void ProcessRecord()
 		{
-			var ps = PowerShell.Create();
-
 			var repoStatus = new ShortRepoStatus
 			{
 				FullPath = Path
 			};
 
 			// Move into the repo
-			ps.AddCommand("Push-Location")
+			PowerShell.AddCommand("Push-Location")
 				.AddArgument(Path)
 				.Invoke();
 
-			RefreshIndex(ps);
+			RefreshIndex(PowerShell);
 
-			repoStatus.Branch = GetCurrentBranch(ps);
+			repoStatus.Branch = GetCurrentBranch(PowerShell);
 
-			repoStatus.LocalChanges = CheckLocalChanges(ps);
+			repoStatus.LocalChanges = CheckLocalChanges();
 
-			repoStatus.RemoteChanges = CheckRemoteChanges(ps);
+			repoStatus.RemoteChanges = CheckRemoteChanges();
 
 			// Output result and return to starting directory
-			ps.AddCommand("Pop-Location")
+			PowerShell.AddCommand("Pop-Location")
 				.Invoke();
 
 			WriteObject(repoStatus);
 		}
 
-		private bool CheckLocalChanges(PowerShell ps)
+		private bool CheckLocalChanges()
 		{
 			// Check for files that are untracked, deleted, modified, or unmerged
-			var localChanges = ps
-				.AddCommand("git")
-				.AddArgument("ls-files")
-				.AddArgument("--others")
-				.AddArgument("--deleted")
-				.AddArgument("--modified")
-				.AddArgument("--unmerged")
-				.AddArgument("--exclude-standard")
-				.Invoke()
-				.Any();
-
-			if (localChanges)
-			{
+			var localChanges = GitService.CallWithOutput("ls-files " +
+				"--others --deleted --modified --unmerged --exclude standard "
+			);
+			if (!string.IsNullOrEmpty(localChanges))
 				return true;
-			}
-			
+
 			// Check for files that are staged but not yet committed
-			return ps
-				.AddCommand("git")
-				.AddArgument("diff")
-				.AddArgument("--name-only")
-				.AddArgument("--cached")
-				.Invoke()
-				.Any();
+			var stagedFiles = GitService.CallWithOutput("diff --name-only --cached");
+			return !string.IsNullOrEmpty(stagedFiles);
 		}
 
-		private bool? CheckRemoteChanges(PowerShell ps)
+		private bool? CheckRemoteChanges()
 		{
-			var remoteName = GetRemoteName(ps);
+			var remoteName = GetRemoteName(PowerShell);
 
 			if (string.IsNullOrEmpty(remoteName))
-			{
 				return null;
-			}
 
-			return ps
-				.AddCommand("git")
-				.AddArgument("diff")
-				.AddArgument("HEAD")
-				.AddArgument(remoteName)
-				.Invoke()
-				.Any();
+			var diffOutput = GitService.CallWithOutput($"diff HEAD {remoteName}");
+
+			return !string.IsNullOrEmpty(diffOutput);
 		}
 	}
 }
