@@ -6,7 +6,7 @@ using System.Management.Automation;
 namespace GitSearch.Commands
 {
 	[Cmdlet(VerbsCommon.Get, "GitStatus")]
-	[OutputType(typeof(string))]
+	[OutputType(typeof(RepoStatus))]
 	public class GetGitStatusCommand : PSCmdlet
 	{
 		[Parameter(
