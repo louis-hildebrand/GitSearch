@@ -34,6 +34,9 @@ namespace GitSearch.Commands
 
 			var currentDirectory = ((PathInfo)GetVariableValue("pwd")).ToString();
 			Directory.SetCurrentDirectory(currentDirectory);
+
+			if (GitService == null)
+				GitService = new GitService(Path);
 		}
 
 		protected override abstract void ProcessRecord();
