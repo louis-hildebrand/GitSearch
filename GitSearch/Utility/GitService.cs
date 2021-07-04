@@ -5,7 +5,14 @@ namespace GitSearch.Utility
 {
 	public class GitService : IGitService
 	{
+		private string WorkingDirectory { get; }
+
 		private StringBuilder Output;
+
+		public GitService(string workingDirectory)
+		{
+			WorkingDirectory = workingDirectory;
+		}
 
 		public void Call(string arguments)
 		{
@@ -13,6 +20,7 @@ namespace GitSearch.Utility
 			{
 				FileName = "git",
 				Arguments = arguments,
+				WorkingDirectory = WorkingDirectory,
 				CreateNoWindow = true,
 				UseShellExecute = false
 			};
@@ -28,6 +36,7 @@ namespace GitSearch.Utility
 			{
 				FileName = "git",
 				Arguments = arguments,
+				WorkingDirectory = WorkingDirectory,
 				CreateNoWindow = true,
 				UseShellExecute = false,
 				RedirectStandardOutput = true

@@ -10,114 +10,82 @@ namespace GitSearch.Commands
 	{
 		protected override void ProcessRecord()
 		{
-			var ps = PowerShell.Create();
-
 			var repoStatus = new LongRepoStatus
 			{
 				FullPath = Path
 			};
 
-			// Move into the repo
-			ps.AddCommand("Push-Location")
-				.AddArgument(Path)
-				.Invoke();
+			RefreshIndex();
 
-			RefreshIndex(ps);
-
-			repoStatus.Branch = GetCurrentBranch(ps);
+			repoStatus.Branch = GetCurrentBranch();
 
 			// Look for local changes
+			repoStatus.HasUntracked = CheckUntrackedFiles();
 
-			repoStatus.HasUntracked = CheckUntrackedFiles(ps);
+			repoStatus.HasModified = CheckModifiedFiles();
 
-			repoStatus.HasModified = CheckModifiedFiles(ps);
+			repoStatus.HasUnmerged = CheckUnmergedFiles();
 
-			repoStatus.HasUnmerged = CheckUnmergedFiles(ps);
-
-			repoStatus.HasStaged = CheckStagedFiles(ps);
+			repoStatus.HasStaged = CheckStagedFiles();
 
 			// Look for differences between the local and remote repos
-			var remoteName = GetRemoteName(ps);
+			var remoteName = GetRemoteName();
 			if (!repoStatus.DetachedHead && !string.IsNullOrEmpty(remoteName))
 			{
-				repoStatus.LocalCommits = CountLocalCommits(ps, remoteName);
+				repoStatus.LocalCommits = CountLocalCommits(remoteName);
 
-				repoStatus.RemoteCommits = CountRemoteCommits(ps, remoteName);
+				repoStatus.RemoteCommits = CountRemoteCommits(remoteName);
 			}
-
-			// Output result and return to starting directory
-			ps.AddCommand("Pop-Location")
-				.Invoke();
 
 			WriteObject(repoStatus);
 		}
 
-		private bool CheckUntrackedFiles(PowerShell ps)
+		private bool CheckUntrackedFiles()
 		{
-			return ps
-				.AddCommand("git")
-				.AddArgument("ls-files")
-				.AddArgument("--others")
-				.AddArgument("--exclude-standard")
-				.Invoke()
-				.Any();
+			var untrackedFiles = GitService.CallWithOutput("ls-files " +
+				"--others --exclude-standard");
+
+			return !string.IsNullOrEmpty(untrackedFiles);
 		}
 
-		private bool CheckModifiedFiles(PowerShell ps)
+		private bool CheckModifiedFiles()
 		{
-			return ps
-				.AddCommand("git")
-				.AddArgument("ls-files")
-				.AddArgument("--deleted")
-				.AddArgument("--modified")
-				.AddArgument("--exclude-standard")
-				.Invoke()
-				.Any();
+			var modifiedFiles = GitService.CallWithOutput("ls-files " +
+				"--deleted --modified --exclude-standard");
+
+			return !string.IsNullOrEmpty(modifiedFiles);
 		}
 
-		private bool CheckUnmergedFiles(PowerShell ps)
+		private bool CheckUnmergedFiles()
 		{
-			return ps
-				.AddCommand("git")
-				.AddArgument("ls-files")
-				.AddArgument("--unmerged")
-				.Invoke()
-				.Any();
+			var unmergedFiles = GitService.CallWithOutput("ls-files " +
+				"--unmerged");
+
+			return !string.IsNullOrEmpty(unmergedFiles);
 		}
 
-		private bool CheckStagedFiles(PowerShell ps)
+		private bool CheckStagedFiles()
 		{
-			return ps
-				.AddCommand("git")
-				.AddArgument("diff")
-				.AddArgument("--name-only")
-				.AddArgument("--cached")
-				.Invoke()
-				.Any();
+			var stagedFiles = GitService.CallWithOutput("ls-files " +
+				"diff --name-only --cached");
+
+			return !string.IsNullOrEmpty(stagedFiles);
 		}
 
-		private int CountLocalCommits(PowerShell ps, string remoteName)
+		private int CountLocalCommits(string remoteName)
 		{
-			var localCommits = ps
-					.AddCommand("git")
-					.AddArgument("rev-list")
-					.AddArgument("--count")
-					.AddArgument($"{remoteName}..HEAD")
-					.Invoke()
-					.First();
-			return int.Parse((string)localCommits.BaseObject);
+			var numLocalCommits = GitService.CallWithOutput("rev-list " +
+				$"--count {remoteName}..HEAD");
+
+			return int.Parse(numLocalCommits);
 		}
 
-		private int CountRemoteCommits(PowerShell ps, string remoteName)
+		private int CountRemoteCommits(string remoteName)
 		{
-			var remoteCommits = ps
-				.AddCommand("git")
-				.AddArgument("rev-list")
-				.AddArgument("--count")
-				.AddArgument($"HEAD..{remoteName}")
-				.Invoke()
-				.First();
-			return int.Parse((string)remoteCommits.BaseObject);
+			var numRemoteCommits = GitService.CallWithOutput("rev-list " +
+				$"--count HEAD..{remoteName}");
+
+			return int.Parse(numRemoteCommits);
 		}
 	}
 }

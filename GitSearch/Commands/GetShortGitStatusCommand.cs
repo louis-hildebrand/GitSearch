@@ -10,10 +10,6 @@ namespace GitSearch.Commands
 	[OutputType(typeof(ShortRepoStatus))]
 	public class GetShortGitStatusCommand : GetGitStatusCommand
 	{
-		private PowerShell PowerShell { get; } = PowerShell.Create();
-
-		private IGitService GitService { get; } = new GitService();
-
 		protected override void ProcessRecord()
 		{
 			var repoStatus = new ShortRepoStatus
@@ -21,22 +17,13 @@ namespace GitSearch.Commands
 				FullPath = Path
 			};
 
-			// Move into the repo
-			PowerShell.AddCommand("Push-Location")
-				.AddArgument(Path)
-				.Invoke();
+			RefreshIndex();
 
-			RefreshIndex(PowerShell);
-
-			repoStatus.Branch = GetCurrentBranch(PowerShell);
+			repoStatus.Branch = GetCurrentBranch();
 
 			repoStatus.LocalChanges = CheckLocalChanges();
 
 			repoStatus.RemoteChanges = CheckRemoteChanges();
-
-			// Output result and return to starting directory
-			PowerShell.AddCommand("Pop-Location")
-				.Invoke();
 
 			WriteObject(repoStatus);
 		}
@@ -57,7 +44,7 @@ namespace GitSearch.Commands
 
 		private bool? CheckRemoteChanges()
 		{
-			var remoteName = GetRemoteName(PowerShell);
+			var remoteName = GetRemoteName();
 
 			if (string.IsNullOrEmpty(remoteName))
 				return null;
