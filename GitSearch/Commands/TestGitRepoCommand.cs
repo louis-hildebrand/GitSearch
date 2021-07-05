@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using GitSearch.Utility;
+using System.IO;
 using System.Management.Automation;
 
 namespace GitSearch.Commands
@@ -19,9 +20,23 @@ namespace GitSearch.Commands
 					Directory.GetCurrentDirectory() : 
 					System.IO.Path.GetFullPath(path);
 			}
-			set { path = value; }
+			set
+			{
+				path = value;
+				GitService = new GitService(Path);
+			}
 		}
 		private string path;
+
+		[Parameter]
+		public SwitchParameter Fast
+		{
+			get { return fast; }
+			set { fast = value; }
+		}
+		private bool fast;
+
+		private IGitService GitService { get; set; }
 
 		protected override void BeginProcessing()
 		{
@@ -29,38 +44,48 @@ namespace GitSearch.Commands
 
 			var currentDirectory = ((PathInfo)GetVariableValue("pwd")).ToString();
 			Directory.SetCurrentDirectory(currentDirectory);
+
+			if (GitService == null)
+				GitService = new GitService(Path);
 		}
 
 		protected override void ProcessRecord()
 		{
-			WriteDebug($"Starting search at {Path}");
+			bool isGitRepo = IsGitRepo();
 
-			var directory = new DirectoryInfo(Path);
+			WriteObject(isGitRepo);
+		}
 
-			if (!directory.Exists)
+		public bool IsGitRepo()
+		{
+			// Only check for the presence of a .git repo
+			if (fast)
 			{
-				WriteObject(false);
-				return;
+				var directory = new DirectoryInfo(Path);
+
+				if (!directory.Exists)
+					return false;
+
+				while (true)
+				{
+					var gitFolderPath = directory.FullName + System.IO.Path.DirectorySeparatorChar + ".git";
+
+					WriteDebug($"Looking for .git folder at {gitFolderPath}");
+
+					if (Directory.Exists(gitFolderPath))
+						return true;
+
+					directory = directory.Parent;
+					if (directory == null)
+						return false;
+				}
 			}
-
-			while (true)
+			// Call git rev-parse --git-dir
+			else
 			{
-				var gitFolderPath = directory.FullName + System.IO.Path.DirectorySeparatorChar + ".git";
+				var gitFolder = GitService.CallWithOutput("rev-parse --git-dir");
 
-				WriteDebug($"Looking for .git folder at {gitFolderPath}");
-
-				if (Directory.Exists(gitFolderPath))
-				{
-					WriteObject(true);
-					return;
-				}
-
-				directory = directory.Parent;
-				if (directory == null)
-				{
-					WriteObject(false);
-					return;
-				}
+				return !string.IsNullOrEmpty(gitFolder);
 			}
 		}
 	}
