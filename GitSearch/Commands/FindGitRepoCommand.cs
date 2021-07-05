@@ -1,5 +1,4 @@
 ﻿using GitSearch.Models;
-using GitSearch.Utility;
 using System.Collections.Generic;
 using System.IO;
 using System.Management.Automation;
@@ -10,10 +9,8 @@ namespace GitSearch.Commands
 	[OutputType(typeof(IEnumerable<RepoStatus>))]
 	public class FindGitRepoCommand : PSCmdlet
 	{
-		[Parameter(
-			Position = 0,
-			ValueFromPipeline = true
-		)]
+		[Parameter(Position = 0, ValueFromPipeline = true)]
+		[Alias("FullName")]
 		public string Path
 		{
 			get

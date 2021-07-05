@@ -8,10 +8,8 @@ namespace GitSearch.Commands
 	[OutputType(typeof(bool))]
 	public class TestGitRepoCommand : PSCmdlet
 	{
-		[Parameter(
-			Position = 0,
-			ValueFromPipeline = true
-		)]
+		[Parameter(Position = 0, ValueFromPipeline = true)]
+		[Alias("FullName")]
 		public string Path
 		{
 			get

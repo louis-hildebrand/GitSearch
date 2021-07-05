@@ -7,10 +7,8 @@ namespace GitSearch.Commands
 {
 	public abstract class GetGitStatusCommand : PSCmdlet
 	{
-		[Parameter(
-			Position = 0,
-			ValueFromPipeline = true
-		)]
+		[Parameter(Position = 0, ValueFromPipeline = true)]
+		[Alias("FullName")]
 		public string Path
 		{
 			get
@@ -65,7 +63,7 @@ namespace GitSearch.Commands
 			return GitService.CallWithOutput("for-each-ref " +
 				$"{refName} --format=%(upstream:short)");
 		}
-	
+
 		protected void FetchRemoteBranch(string remoteBranchName)
 		{
 			if (!fetch)

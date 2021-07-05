@@ -1,7 +1,4 @@
 ﻿using GitSearch.Models;
-using GitSearch.Utility;
-using System.Diagnostics;
-using System.Linq;
 using System.Management.Automation;
 
 namespace GitSearch.Commands
