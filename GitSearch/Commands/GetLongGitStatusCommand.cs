@@ -15,8 +15,6 @@ namespace GitSearch.Commands
 				FullPath = Path
 			};
 
-			RefreshIndex();
-
 			repoStatus.Branch = GetCurrentBranch();
 
 			// Look for local changes

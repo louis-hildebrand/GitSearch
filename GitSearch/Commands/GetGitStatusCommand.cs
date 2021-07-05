@@ -41,11 +41,6 @@ namespace GitSearch.Commands
 
 		protected override abstract void ProcessRecord();
 
-		protected void RefreshIndex()
-		{
-			GitService.Call("update-index --refresh");
-		}
-
 		protected string GetCurrentBranch()
 		{
 			return GitService.CallWithOutput("rev-parse " +
