@@ -8,7 +8,7 @@ namespace GitSearch.Commands
 	[OutputType(typeof(LongRepoStatus))]
 	public class GetLongGitStatusCommand : GetGitStatusCommand
 	{
-		protected override void ProcessRecord()
+		public override RepoStatus GetRepoStatus()
 		{
 			var repoStatus = new LongRepoStatus
 			{
@@ -36,6 +36,13 @@ namespace GitSearch.Commands
 
 				repoStatus.RemoteCommits = CountRemoteCommits(remoteBranchName);
 			}
+
+			return repoStatus;
+		}
+
+		protected override void ProcessRecord()
+		{
+			var repoStatus = GetRepoStatus();
 
 			WriteObject(repoStatus);
 		}

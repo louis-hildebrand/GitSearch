@@ -1,4 +1,5 @@
-﻿using GitSearch.Utility;
+﻿using GitSearch.Models;
+using GitSearch.Utility;
 using System.IO;
 using System.Management.Automation;
 
@@ -33,6 +34,8 @@ namespace GitSearch.Commands
 			set { fetch = value; }
 		}
 		private bool fetch;
+
+		public abstract RepoStatus GetRepoStatus();
 
 		protected IGitService GitService { get; set; }
 

@@ -10,7 +10,7 @@ namespace GitSearch.Commands
 	[OutputType(typeof(ShortRepoStatus))]
 	public class GetShortGitStatusCommand : GetGitStatusCommand
 	{
-		protected override void ProcessRecord()
+		public override RepoStatus GetRepoStatus()
 		{
 			var repoStatus = new ShortRepoStatus
 			{
@@ -25,9 +25,16 @@ namespace GitSearch.Commands
 			if (!string.IsNullOrEmpty(remoteBranchName))
 			{
 				FetchRemoteBranch(remoteBranchName);
-				
+
 				repoStatus.RemoteChanges = CheckRemoteChanges(remoteBranchName);
 			}
+
+			return repoStatus;
+		}
+
+		protected override void ProcessRecord()
+		{
+			var repoStatus = GetRepoStatus();
 
 			WriteObject(repoStatus);
 		}
