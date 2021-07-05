@@ -27,12 +27,14 @@ namespace GitSearch.Commands
 			repoStatus.HasStaged = CheckStagedFiles();
 
 			// Look for differences between the local and remote repos
-			var remoteName = GetRemoteName();
-			if (!repoStatus.DetachedHead && !string.IsNullOrEmpty(remoteName))
+			var remoteBranchName = GetRemoteBranchName();
+			if (!repoStatus.DetachedHead && !string.IsNullOrEmpty(remoteBranchName))
 			{
-				repoStatus.LocalCommits = CountLocalCommits(remoteName);
+				FetchRemoteBranch(remoteBranchName);
 
-				repoStatus.RemoteCommits = CountRemoteCommits(remoteName);
+				repoStatus.LocalCommits = CountLocalCommits(remoteBranchName);
+
+				repoStatus.RemoteCommits = CountRemoteCommits(remoteBranchName);
 			}
 
 			WriteObject(repoStatus);
@@ -70,18 +72,18 @@ namespace GitSearch.Commands
 			return !string.IsNullOrEmpty(stagedFiles);
 		}
 
-		private int CountLocalCommits(string remoteName)
+		private int CountLocalCommits(string remoteBranchName)
 		{
 			var numLocalCommits = GitService.CallWithOutput("rev-list " +
-				$"--count {remoteName}..HEAD");
+				$"--count {remoteBranchName}..HEAD");
 
 			return int.Parse(numLocalCommits);
 		}
 
-		private int CountRemoteCommits(string remoteName)
+		private int CountRemoteCommits(string remoteBranchName)
 		{
 			var numRemoteCommits = GitService.CallWithOutput("rev-list " +
-				$"--count HEAD..{remoteName}");
+				$"--count HEAD..{remoteBranchName}");
 
 			return int.Parse(numRemoteCommits);
 		}

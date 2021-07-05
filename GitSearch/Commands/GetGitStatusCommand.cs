@@ -26,6 +26,14 @@ namespace GitSearch.Commands
 		}
 		private string path;
 
+		[Parameter]
+		public SwitchParameter Fetch
+		{
+			get { return fetch; }
+			set { fetch = value; }
+		}
+		private bool fetch;
+
 		protected IGitService GitService { get; set; }
 
 		protected override void BeginProcessing()
@@ -47,12 +55,24 @@ namespace GitSearch.Commands
 				"--symbolic-full-name --abbrev-ref HEAD");
 		}
 
-		protected string GetRemoteName()
+		protected string GetRemoteBranchName()
 		{
 			var refName = GitService.CallWithOutput("symbolic-ref --quiet HEAD");
 
 			return GitService.CallWithOutput("for-each-ref " +
 				$"{refName} --format=%(upstream:short)");
+		}
+	
+		protected void FetchRemoteBranch(string remoteBranchName)
+		{
+			if (!fetch)
+				return;
+
+			var slashIndex = remoteBranchName.IndexOf('/');
+			var remoteName = remoteBranchName.Substring(0, slashIndex);
+			var branchName = remoteBranchName.Substring(slashIndex + 1);
+
+			GitService.Call($"fetch {remoteName} {branchName}");
 		}
 	}
 }

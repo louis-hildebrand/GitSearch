@@ -21,7 +21,13 @@ namespace GitSearch.Commands
 
 			repoStatus.LocalChanges = CheckLocalChanges();
 
-			repoStatus.RemoteChanges = CheckRemoteChanges();
+			var remoteBranchName = GetRemoteBranchName();
+			if (!string.IsNullOrEmpty(remoteBranchName))
+			{
+				FetchRemoteBranch(remoteBranchName);
+				
+				repoStatus.RemoteChanges = CheckRemoteChanges(remoteBranchName);
+			}
 
 			WriteObject(repoStatus);
 		}
@@ -40,14 +46,9 @@ namespace GitSearch.Commands
 			return !string.IsNullOrEmpty(stagedFiles);
 		}
 
-		private bool? CheckRemoteChanges()
+		private bool? CheckRemoteChanges(string remoteBranchName)
 		{
-			var remoteName = GetRemoteName();
-
-			if (string.IsNullOrEmpty(remoteName))
-				return null;
-
-			var diffOutput = GitService.CallWithOutput($"diff HEAD {remoteName}");
+			var diffOutput = GitService.CallWithOutput($"diff HEAD {remoteBranchName}");
 
 			return !string.IsNullOrEmpty(diffOutput);
 		}
