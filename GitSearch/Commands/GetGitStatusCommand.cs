@@ -1,6 +1,8 @@
 ﻿using GitSearch.Models;
 using GitSearch.Utility;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Management.Automation;
 
 namespace GitSearch.Commands
@@ -52,9 +54,18 @@ namespace GitSearch.Commands
 
 		protected override void ProcessRecord()
 		{
-			var directories = Path;
+			var repos = new HashSet<string>();
 
-			foreach (var dir in directories)
+			foreach (var pattern in Path)
+			{
+				var matches = InvokeProvider.ChildItem
+					.GetNames(pattern, ReturnContainers.ReturnMatchingContainers, false)
+					.Where(x => new TestGitRepoCommand { Path = x }.IsGitRepo());
+
+				repos.UnionWith(matches);
+			}
+
+			foreach (var dir in repos)
 			{
 				var repoStatus = GetRepoStatus(dir);
 
@@ -66,7 +77,7 @@ namespace GitSearch.Commands
 
 		#region General helper methods
 
-		public RepoStatus GetRepoStatus(string path)
+		private RepoStatus GetRepoStatus(string path)
 		{
 			GitService = new GitService(path);
 
@@ -74,6 +85,16 @@ namespace GitSearch.Commands
 				return GetLongRepoStatus(path);
 			else
 				return GetShortRepoStatus(path);
+		}
+
+		private bool IsGitRepo(string path)
+		{
+			var testGitRepoCmdlet = new TestGitRepoCommand
+			{
+				Path = path
+			};
+
+			return testGitRepoCmdlet.Invoke<bool>().First();
 		}
 
 		protected string GetCurrentBranch()
