@@ -56,13 +56,13 @@ namespace GitSearch.Commands
 
 		public bool IsGitRepo()
 		{
+			if (!Directory.Exists(Path))
+				return false;
+
 			// Only check for the presence of a .git repo
 			if (fast)
 			{
 				var directory = new DirectoryInfo(Path);
-
-				if (!directory.Exists)
-					return false;
 
 				while (true)
 				{
