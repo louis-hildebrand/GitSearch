@@ -13,11 +13,18 @@ namespace GitSearch.Commands
 	{
 		#region Parameters
 
-		[Parameter(Position = 0, ValueFromPipeline = true)]
+		[Parameter(
+			Position = 0, 
+			ValueFromPipeline = true,
+			HelpMessage = "The directories for which to get the status."	
+		)]
 		[Alias("FullName")]
 		public string[] Path { get; set; }
 
-		[Parameter]
+		[Parameter(
+			HelpMessage = "Fetches the remote branch before comparing it to " +
+				"the local branch."
+		)]
 		public SwitchParameter Fetch
 		{
 			get { return fetch; }
@@ -25,9 +32,10 @@ namespace GitSearch.Commands
 		}
 		private bool fetch;
 
-		[Parameter]
-		[Alias("Full")]
-		public SwitchParameter FullStatus
+		[Parameter(
+			HelpMessage = "Returns more detailed status information."
+		)]
+		public SwitchParameter Full
 		{
 			get { return fullStatus; }
 			set { fullStatus = value; }

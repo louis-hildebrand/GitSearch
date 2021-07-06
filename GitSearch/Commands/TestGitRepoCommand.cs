@@ -8,7 +8,11 @@ namespace GitSearch.Commands
 	[OutputType(typeof(bool))]
 	public class TestGitRepoCommand : PSCmdlet
 	{
-		[Parameter(Position = 0, ValueFromPipeline = true)]
+		[Parameter(
+			Position = 0,
+			ValueFromPipeline = true,
+			HelpMessage = "The directory to test."
+		)]
 		[Alias("FullName")]
 		public string Path
 		{
