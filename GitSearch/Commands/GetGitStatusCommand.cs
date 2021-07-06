@@ -13,7 +13,7 @@ namespace GitSearch.Commands
 
 		[Parameter(Position = 0, ValueFromPipeline = true)]
 		[Alias("FullName")]
-		public string Path { get; set; }
+		public string[] Path { get; set; }
 
 		[Parameter]
 		public SwitchParameter Fetch
@@ -52,9 +52,14 @@ namespace GitSearch.Commands
 
 		protected override void ProcessRecord()
 		{
-			var repoStatus = GetRepoStatus(Path);
+			var directories = Path;
 
-			WriteObject(repoStatus);
+			foreach (var dir in directories)
+			{
+				var repoStatus = GetRepoStatus(dir);
+
+				WriteObject(repoStatus);
+			}
 		}
 
 		#endregion Override
