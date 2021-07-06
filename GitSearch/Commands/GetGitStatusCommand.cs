@@ -58,8 +58,8 @@ namespace GitSearch.Commands
 
 			foreach (var pattern in Path)
 			{
-				var matches = InvokeProvider.ChildItem
-					.GetNames(pattern, ReturnContainers.ReturnMatchingContainers, false)
+				var matches = InvokeProvider.ChildItem.Get(pattern, false)
+					.Select(x => ((FileSystemInfo)x.BaseObject).FullName)
 					.Where(x => new TestGitRepoCommand { Path = x }.IsGitRepo());
 
 				repos.UnionWith(matches);
